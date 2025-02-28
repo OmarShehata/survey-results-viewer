@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Survey Viewer</title>
+    <style>
+        :root {
+            --primary-color: #4285F4;
+            --secondary-color: #34A853;
+            --background-color: #f9f9f9;
+            --text-color: #333;
+            --error-color: #EA4335;
+        }
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-form {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="text"], 
+        input[type="number"], 
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #3367d6;
+        }
+
+        .example {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Google Sheets Survey Viewer</h1>
+            <p class="subtitle">view and share survey responses with semantic clustering</p>
+        </header>
+
+        <div class="input-form">
+            <div class="form-group">
+                <label for="sheets-url">Google Sheets URL</label>
+                <input type="text" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit">
+                <p class="error-message" id="url-error">Please enter a valid Google Sheets URL</p>
+            </div>
+
+            <div class="form-group">
+                <label for="column-select">Data Column (default: first text column)</label>
+                <input type="text" id="column-select" placeholder="e.g., B or Column name (optional)">
+            </div>
+
+            <button id="view-button">Get responses page</button>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>
+            Source code: <a href="https://github.com/OmarShehata/survey-results-viewer">https://github.com/OmarShehata/survey-results-viewer</a>
+        </p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const viewButton = document.getElementById('view-button');
+            const sheetsUrlInput = document.getElementById('sheets-url');
+            const columnInput = document.getElementById('column-select');
+            const urlError = document.getElementById('url-error');
+
+            viewButton.addEventListener('click', function() {
+                // Get the Google Sheets URL
+                const sheetsUrl = sheetsUrlInput.value.trim();
+                
+                // Validate URL format
+                if (!sheetsUrl) {
+                    urlError.style.display = 'block';
+                    return;
+                }
+
+                // Extract spreadsheet ID from the URL
+                const match = sheetsUrl.match(/\/d\/(.*?)([\/\?]|$)/);
+                if (!match) {
+                    urlError.style.display = 'block';
+                    return;
+                }
+
+                const spreadsheetId = match[1];
+                urlError.style.display = 'none';
+
+                // Get column selection (if provided)
+                const column = columnInput.value.trim();
+                
+                // Redirect to results page with query parameters
+                let resultsUrl = `results.html?id=${encodeURIComponent(spreadsheetId)}`;
+                if (column) {
+                    resultsUrl += `&column=${encodeURIComponent(column)}`;
+                }
+                
+                window.location.href = resultsUrl;
+            });
+
+            // Enable form submission by pressing Enter
+            sheetsUrlInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    viewButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

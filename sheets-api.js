@@ -6,16 +6,28 @@
  */
 
 // Configuration (would be stored securely in a real application)
-const API_KEY = 'AIzaSyBMd8nlalBxzf3xyhIEBHrfKbK2Dd5WgJ4'; 
+const API_KEY = 'AIzaSyBMd8nlalBxzf3xyhIEBHrfKbK2Dd5WgJ4';
 const SHEETS_API_BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/';
+
+export async function getSpreadsheetTitle(spreadsheetId) {
+    try {
+      const response = await gapi.client.sheets.spreadsheets.get({
+        spreadsheetId: spreadsheetId
+      });
+      return response.result.properties.title;
+    } catch (error) {
+      console.error('Error fetching spreadsheet title:', error);
+      throw error;
+    }
+  }
 
 /**
  * Fetches data from a Google Sheet using Google's JavaScript client library
  * @param {string} spreadsheetId - The ID of the Google Sheet
- * @param {string} range - The range of cells to retrieve (e.g., 'Sheet1!A1:D10')
+ * @param {string} sheetName - Optional sheet name. If not provided, the first sheet will be used
  * @returns {Promise} - Promise that resolves with the sheet data
  */
-export async function fetchSheetData(spreadsheetId, range = 'Sheet1') {
+export async function fetchSheetData(spreadsheetId, sheetName = null) {
     // Make sure we're only initializing gapi once
     if (!window.gapiInitialized) {
         try {
@@ -52,13 +64,24 @@ export async function fetchSheetData(spreadsheetId, range = 'Sheet1') {
     }
 
     try {
+        // If no sheet name provided, get the first sheet
+        let targetSheet = sheetName;
+        if (!targetSheet) {
+            const sheets = await getSheetNames(spreadsheetId);
+            if (!sheets || sheets.length === 0) {
+                throw new Error('No sheets found in this spreadsheet.');
+            }
+            targetSheet = sheets[0];
+            console.log('Using first sheet:', targetSheet);
+        }
+        
         // Make the API request through the client library
         const response = await gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: spreadsheetId,
-            range: range
+            range: `${targetSheet}!A1:Z1000` // Get a reasonably large range of cells
         });
-        
-        return response.result.values;
+
+        return response.result        
     } catch (error) {
         console.error('Error fetching Google Sheet data:', error);
         
@@ -123,7 +146,7 @@ function extractHeaders(data) {
  * @param {Array} data - The raw sheet data (2D array)
  * @returns {Array} - Array of objects with properties named after column headers
  */
-function transformSheetData(data) {
+export function transformSheetData(data) {
     if (!data || data.length < 2) {
         return [];
     }
@@ -146,7 +169,7 @@ function transformSheetData(data) {
  * @param {string} columnName - The name of the column to extract
  * @returns {Array} - Array of values from the specified column
  */
-function extractColumn(data, columnName) {
+export function extractColumn(data, columnName) {
     return data.map(row => {
         return {
             text: row[columnName] || '',
@@ -162,7 +185,7 @@ function extractColumn(data, columnName) {
  * @param {string} columnIdentifier - Column letter (A, B, C...) or column name
  * @returns {string} - The matching column name or null if not found
  */
-function findColumn(headers, columnIdentifier) {
+export function findColumn(headers, columnIdentifier) {
     // If it's a column letter (A, B, C...)
     if (/^[A-Z]$/i.test(columnIdentifier)) {
         const index = columnIdentifier.toUpperCase().charCodeAt(0) - 65; // Convert A->0, B->1, etc.
