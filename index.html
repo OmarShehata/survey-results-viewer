@@ -136,7 +136,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const viewButton = document.getElementById('view-button');
             const sheetsUrlInput = document.getElementById('sheets-url');
-            const columnInput = document.getElementById('column-select');
             const urlError = document.getElementById('url-error');
 
             viewButton.addEventListener('click', function() {
@@ -159,14 +158,9 @@
                 const spreadsheetId = match[1];
                 urlError.style.display = 'none';
 
-                // Get column selection (if provided)
-                const column = columnInput.value.trim();
-                
+          
                 // Redirect to results page with query parameters
                 let resultsUrl = `results.html?id=${encodeURIComponent(spreadsheetId)}`;
-                if (column) {
-                    resultsUrl += `&column=${encodeURIComponent(column)}`;
-                }
                 
                 window.location.href = resultsUrl;
             });
