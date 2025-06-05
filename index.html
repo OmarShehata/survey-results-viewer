@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Google Sheets Survey Viewer</title>
+    
+  <script type="module" crossorigin src="./assets/index.e0c03e29.js"></script>
+  <link rel="stylesheet" href="./assets/index.57bfc6bc.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Google Sheets Survey Viewer</h1>
+            <p class="subtitle">view and share survey responses with semantic clustering</p>
+        </header>
+
+        <div class="input-form">
+            <div class="form-group">
+                <label for="sheets-url">Google Sheets URL</label>
+                <input type="text" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit">
+                <p class="error-message" id="url-error">Please enter a valid Google Sheets URL</p>
+            </div>
+
+            <button id="view-button">All responses</button>
+            <button id="semantic-button">Semantic clusters</button>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>
+            Source code: <a href="https://github.com/OmarShehata/survey-results-viewer">https://github.com/OmarShehata/survey-results-viewer</a>
+        </p>
+    </footer>
+
+    
+</body>
+</html>
