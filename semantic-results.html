@@ -183,6 +183,21 @@
                 padding: 1rem;
             }
         }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #3367d6;
+        }
     </style>
 </head>
 <body>
@@ -219,6 +234,10 @@
             <label for="openai-key">OpenAI Key:</label>
             <input id="openai-key" type="text" placeholder="(use local model)"/>
         </div>
+
+        <button id="run-button" style="margin-bottom:25px; display: none">
+            Run clustering
+        </button>
 
         <div class="info-banner" id="info-banner">
             Loading sheet information...
@@ -393,13 +412,16 @@
                     // Populate the column dropdown
                     populateColumnDropdown(headers, targetColumn);
                     
-                    // Display the responses
-                    await displayResponses(responseData);
-
-                    const numClustersElement = document.querySelector("#num-clusters")
-                    numClustersElement.onblur = async () => {
-                        await displayResponses(responseData)
+                    
+                    document.querySelector("#run-button").style.display = 'block'
+                    document.querySelector("#run-button").onclick = async () => {
+                        await displayResponses(responseData);
                     }
+
+                    // const numClustersElement = document.querySelector("#num-clusters")
+                    // numClustersElement.onblur = async () => {
+                    //     await displayResponses(responseData)
+                    // }
                 } catch (error) {
                     console.error('Error loading sheet data:', error);
                     showError(error.message || 'Failed to load spreadsheet data');
@@ -478,6 +500,7 @@
                     centers = await semanticEmbedding.embed(centerInputs)
                 }
 
+                console.log({items, numClusters, centers})
                 let clusters = cluster(items, numClusters, centers)
                 clusters.sort((a, b) => a.items.length - b.items.length)
                 infoBanner.querySelector("#num-clusters").innerHTML = 

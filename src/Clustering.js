@@ -29,9 +29,9 @@ function getOriginalDataBuckets(clusteringResult, originalDataItems) {
 		if (clusterMap[label] == undefined) clusterMap[label] = { items: [] }
 		clusterMap[label].items.push(item)
 	}
-	
+	const clusterIndices = Object.keys(clusterMap).map(item => Number(item))
 	// For each cluster, sort by its distance to the centroid
-	for (let i = 0; i < centroids.length; i++) {
+	for (let i = 0; i < clusterIndices.length; i++) {
 		const cluster = clusterMap[i].items
 		const centroid = centroids[i]
 		// Calculate distances for all items in the cluster
