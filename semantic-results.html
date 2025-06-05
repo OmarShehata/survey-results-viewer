@@ -239,6 +239,10 @@
             Run clustering
         </button>
 
+        <button id="clear-button" style="margin-bottom:25px; background-color: #fc6b6b;">
+            Clear Cache
+        </button>
+
         <div class="info-banner" id="info-banner">
             Loading sheet information...
         </div>
@@ -312,6 +316,12 @@
             }
             if (localStorage.getItem('cluster-centers')) {
                 clusterCenters.value = localStorage.getItem('cluster-centers')
+            }
+            if (localStorage.getItem('num-clusters')) {
+                document.querySelector("#num-clusters").value = localStorage.getItem('num-clusters')
+            }
+            document.querySelector("#num-clusters").onblur = () => {
+                localStorage.setItem('num-clusters', document.querySelector("#num-clusters").value)
             }
 
             // Parse URL parameters
@@ -413,9 +423,16 @@
                     populateColumnDropdown(headers, targetColumn);
                     
                     
-                    document.querySelector("#run-button").style.display = 'block'
+                    document.querySelector("#run-button").style.display = 'inline-block'
                     document.querySelector("#run-button").onclick = async () => {
                         await displayResponses(responseData);
+                    }
+
+                    document.querySelector("#clear-button").onclick = async () => {
+                        const semanticEmbedding = new SemanticEmbedding()
+                        await semanticEmbedding.init()
+                        await semanticEmbedding.clearCache()
+                        alert("Done")
                     }
 
                     // const numClustersElement = document.querySelector("#num-clusters")
@@ -496,7 +513,6 @@
                 let centers = null
                 if (localStorage.getItem('cluster-centers')) {
                     const centerInputs = localStorage.getItem('cluster-centers').split('\n').filter(item => item.length)
-                    
                     centers = await semanticEmbedding.embed(centerInputs)
                 }
 
