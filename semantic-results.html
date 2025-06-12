@@ -476,11 +476,15 @@
                 const inputTextArray = data.map(item => item.text)
                 console.log("LOADING SEMANTIC EMBEDDING")
 
+                const openaiKey = localStorage.getItem('openai-key')
                 const semanticEmbedding = new SemanticEmbedding({
-                    openaiKey: localStorage.getItem('openai-key')
+                    openaiKey
                 })
                 await semanticEmbedding.init()
-                await semanticEmbedding.initLocalEmbedder(console.log)
+                if (openaiKey == null) {
+                    await semanticEmbedding.initLocalEmbedder(console.log)
+                }
+                
 
                 window.clearCache = async () => {
                     await semanticEmbedding.clearCache()
