@@ -198,6 +198,10 @@
         button:hover {
             background-color: #3367d6;
         }
+
+        .map-container {
+            height: 400px;
+        }
     </style>
 </head>
 <body>
@@ -233,6 +237,11 @@
         <div class="column-selector">
             <label for="openai-key">OpenAI Key:</label>
             <input id="openai-key" type="text" placeholder="(use local model)"/>
+        </div>
+
+        <div class="column-selector">
+            <input id="truncate-responses" type="checkbox"/>
+            <label for="truncate-responses">Truncate responses</label>
         </div>
 
         <button id="run-button" style="margin-bottom:25px; display: none">
@@ -282,6 +291,8 @@
          } from './sheets-api.js'
          import { SemanticEmbedding } from './src/SemanticEmbedding.js'
          import { cluster } from './src/Clustering.js'
+         import { ClusterMap } from './src/ClusterMap.js'
+
 
         // Global variables to store data for reuse
         let globalHeaders = [];
@@ -302,6 +313,8 @@
         };
         
         document.addEventListener('DOMContentLoaded', function() {
+            
+            
             const openaiKeyElement = document.querySelector("#openai-key")
             openaiKeyElement.onblur = () => {
                 localStorage.setItem('openai-key', openaiKeyElement.value)
@@ -515,39 +528,71 @@
                     numClusters = Number(numClustersElement.value)
                 }
                 let centers = null
+                let centerInputs = []
                 if (localStorage.getItem('cluster-centers')) {
-                    const centerInputs = localStorage.getItem('cluster-centers').split('\n').filter(item => item.length)
+                    centerInputs = localStorage.getItem('cluster-centers').split('\n').filter(item => item.length)
                     centers = await semanticEmbedding.embed(centerInputs)
                 }
 
                 console.log({items, numClusters, centers})
-                let clusters = cluster(items, numClusters, centers)
+                let clusters = cluster(items, numClusters, centers, centerInputs)
                 clusters.sort((a, b) => a.items.length - b.items.length)
                 infoBanner.querySelector("#num-clusters").innerHTML = 
                 `<strong>Number of clusters:</strong> ${clusters.length}`
                 
                 let clusterNum = 1
                 for (let cluster of clusters) {
-                    const responseList = document.createElement('div');
-                    responseList.id = 'response-list';
-                    responseList.className = 'response-list';
-                    responseListContainer.appendChild(responseList)
+   
 
                     // Add cluster title 
+                    let clusterCenterInput = ''
+                    if (cluster.centerInput) {
+                        clusterCenterInput = ` - ${cluster.centerInput.split(' ')[0].replace(',', '')} - `
+                    }
                     const clusterTitle = document.createElement('h1');
                     clusterTitle.style = 'flex-basis: 100%;'
-                    clusterTitle.textContent = `Cluster ${clusterNum} - (${cluster.items.length} responses)`
-                    clusterNum++
-                    responseList.appendChild(clusterTitle);
+                    clusterTitle.textContent = `Cluster ${clusterNum} ${clusterCenterInput} (${cluster.items.length} responses)`
+                    responseListContainer.appendChild(clusterTitle);
+
+                    
+                    let clusterMap
+                    if (cluster.items.length > 1) {
+                        
+                        // Add map
+                        const mapContainer = document.createElement('div')
+                        mapContainer.className = 'map-container'
+                        mapContainer.id = `map-container-${clusterNum}`
+                        responseListContainer.appendChild(mapContainer)
+                        
+                        clusterMap = new ClusterMap({ containerId: mapContainer.id })
+                        clusterMap.visualizeCluster(cluster)
+                    }
+                     
                     
                     // const varianceText = document.createElement('p')
                     // varianceText.textContent = `Standard Deviation: ${cluster.stdDev}`
                     // responseList.appendChild(varianceText);
 
                     /// Add text
-                    for (let response of cluster.items) {
+                    const responseList = document.createElement('div');
+                    responseList.id = 'response-list';
+                    responseList.className = 'response-list';
+                    responseListContainer.appendChild(responseList)
+
+                    const truncate = document.querySelector("#truncate-responses").checked 
+
+                    for (let i = 0; i < cluster.items.length; i++) {
+                        const response = cluster.items[i]
+                        if (truncate && i > 5) {
+                            break
+                        }
                         const item = document.createElement('div');
                         item.className = 'response-item';
+                        item.onclick = function(e) {
+                            if (clusterMap) {
+                                clusterMap.changeSelectedPoint(response.content)
+                            }
+                        }
                         
                         const content = document.createElement('div');
                         content.className = 'response-content';
@@ -557,6 +602,8 @@
                         responseList.appendChild(item);
                     }
                     
+                    clusterNum++
+
                 }
                 
             }

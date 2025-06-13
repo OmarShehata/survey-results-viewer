@@ -4,7 +4,7 @@ import { squaredEuclidean } from 'ml-distance-euclidean';
 /*
 items = [ {embedding: [0, 1, ...], content: "text" } ]
 */
-export function cluster(items, numberOfClusters = 5, centers = null) {
+export function cluster(items, numberOfClusters = 5, centers = null, centerInputs = null) {
     const vectors = items.map(item => {
         return item.embedding
     })
@@ -15,11 +15,11 @@ export function cluster(items, numberOfClusters = 5, centers = null) {
 	}
 
     const clusteringResult = kmeans(vectors, numberOfClusters, options);
-    const clusters = getOriginalDataBuckets(clusteringResult, items)
+    const clusters = getOriginalDataBuckets(clusteringResult, items, centerInputs)
     return clusters
 }
 
-function getOriginalDataBuckets(clusteringResult, originalDataItems) {
+function getOriginalDataBuckets(clusteringResult, originalDataItems, centerInputs) {
 	const { clusters, centroids } = clusteringResult
 	// console.log({ centroids, clusters })
 	const clusterMap = {}
@@ -41,6 +41,8 @@ function getOriginalDataBuckets(clusteringResult, originalDataItems) {
 		const mean = distances.reduce((sum, dist) => sum + dist, 0) / distances.length;
 		const variance = distances.reduce((sum, dist) => sum + Math.pow(dist - mean, 2), 0) / distances.length;
 		clusterMap[i].stdDev = Math.sqrt(variance);
+		clusterMap[i].centroid = centroid
+		clusterMap[i].centerInput = centerInputs[i]
 
 		// Sort cluster items by distance to centroid (closest first)
 		cluster.sort((a, b) => {
