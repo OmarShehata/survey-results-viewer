@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D PCA Points Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            background-color: white;
+            display: block;
+            margin: 20px auto;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>2D PCA Points Visualization</h1>
+    
+    <div class="controls">
+        <button onclick="drawPoints()">Redraw Points</button>
+        <button onclick="clearCanvas()">Clear Canvas</button>
+    </div>
+    
+    <canvas id="canvas" width="800" height="600"></canvas>
+    
+    <div class="info">
+        <p>Canvas shows your PCA-projected points. Origin (0,0) is marked with red crosshairs.</p>
+        <p>Hover over points to see coordinates and index.</p>
+    </div>
+
+    <script>
+
+
+        // Placeholder 2D PCA data - replace with your actual data
+        const pcaData = 
+        JSON.parse(`[[5.448734299334907,-13.911289829212311],[14.503598829442733,-8.940082503563746],[15.671544435730363,-9.993174293003277],[9.487383860953093,-15.237024365806281],[18.067112021748734,-1.137155088201748],[-2.3171996458781408,-13.405981656577673],[-15.055314048717792,-15.553624119600999],[-1.6137249068622677,-10.661306412477092],[12.010229471101397,0.6284803941941922],[-28.729789512156493,-23.18500348036601],[25.166056017213087,7.0185717731090875],[26.19991818531171,3.5255266388872504],[-28.857857375194104,-17.557736677127732],[-1.5260399234118205,-6.197134171596953],[-25.49205576536202,-24.926101216032727],[-4.225874904513967,-8.840707958827853],[24.128638205583524,8.585996796885617],[21.71657412896904,3.345274177030892],[0.9890315829462688,11.491289531743071],[-0.03582064936327206,-0.3351574015823113],[9.745334679615627,12.25080433983182],[1.8243915692542485,10.385769849027216],[-4.0483395163608105,18.297985868903304],[-30.691466574261643,27.00062433063809],[-25.55143322986999,32.17795367013888],[-16.813631235252434,35.17320180358745]]`)
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function findDataBounds() {
+            const xs = pcaData.map(p => p[0]);
+            const ys = pcaData.map(p => p[1]);
+            return {
+                minX: Math.min(...xs),
+                maxX: Math.max(...xs),
+                minY: Math.min(...ys),
+                maxY: Math.max(...ys)
+            };
+        }
+        
+        function drawPoints() {
+            clearCanvas();
+            
+            const bounds = findDataBounds();
+            const padding = 50;
+            const plotWidth = canvas.width - 2 * padding;
+            const plotHeight = canvas.height - 2 * padding;
+            
+            // Draw axes through origin
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            
+            // Calculate origin position
+            const originX = padding + ((0 - bounds.minX) / (bounds.maxX - bounds.minX)) * plotWidth;
+            const originY = padding + ((bounds.maxY - 0) / (bounds.maxY - bounds.minY)) * plotHeight;
+            
+            // Draw crosshairs at origin
+            ctx.beginPath();
+            ctx.moveTo(originX - 10, originY);
+            ctx.lineTo(originX + 10, originY);
+            ctx.moveTo(originX, originY - 10);
+            ctx.lineTo(originX, originY + 10);
+            ctx.stroke();
+            
+            // Draw points
+            pcaData.forEach((point, index) => {
+                const x = padding + ((point[0] - bounds.minX) / (bounds.maxX - bounds.minX)) * plotWidth;
+                const y = padding + ((bounds.maxY - point[1]) / (bounds.maxY - bounds.minY)) * plotHeight;
+                
+                // Draw point
+                ctx.fillStyle = '#3366cc';
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Draw index label
+                ctx.fillStyle = '#666';
+                ctx.font = '12px Arial';
+                ctx.fillText(index.toString(), x + 8, y - 8);
+            });
+            
+            // Draw bounds info
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.fillText(`X: ${bounds.minX.toFixed(1)} to ${bounds.maxX.toFixed(1)}`, 10, 20);
+            ctx.fillText(`Y: ${bounds.minY.toFixed(1)} to ${bounds.maxY.toFixed(1)}`, 10, 40);
+        }
+        
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+
+        
+        // Add hover functionality
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const bounds = findDataBounds();
+            const padding = 50;
+            const plotWidth = canvas.width - 2 * padding;
+            const plotHeight = canvas.height - 2 * padding;
+            
+            // Check if mouse is near any point
+            pcaData.forEach((point, index) => {
+                const x = padding + ((point[0] - bounds.minX) / (bounds.maxX - bounds.minX)) * plotWidth;
+                const y = padding + ((bounds.maxY - point[1]) / (bounds.maxY - bounds.minY)) * plotHeight;
+                
+                const distance = Math.sqrt((mouseX - x) ** 2 + (mouseY - y) ** 2);
+                if (distance < 10) {
+                    canvas.title = `Point ${index}: (${point[0].toFixed(2)}, ${point[1].toFixed(2)})`;
+                    return;
+                }
+            });
+        });
+        
+        // Initial draw
+        drawPoints()
+
+        </script>
+        </body>
+        </html>
