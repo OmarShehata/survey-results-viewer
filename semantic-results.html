@@ -279,6 +279,7 @@
     </footer>
 
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://apis.google.com/js/api.js"></script>
     <script type="module">
         import { 
@@ -295,7 +296,6 @@
 
 
         // Global variables to store data for reuse
-        let globalHeaders = [];
         let globalTransformedData = [];
         let globalSpreadsheetId = '';
         let globalColumnParam = '';
@@ -312,7 +312,7 @@
             window.location.href = url.toString();
         };
         
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             
             
             const openaiKeyElement = document.querySelector("#openai-key")
@@ -341,7 +341,8 @@
             const urlParams = new URLSearchParams(window.location.search);
             const spreadsheetId = urlParams.get('id');
             const columnParam = urlParams.get('column');
-            
+            const csvInput = localStorage.getItem('csv')
+
             // Store globally
             globalSpreadsheetId = spreadsheetId;
             globalColumnParam = columnParam;
@@ -350,143 +351,46 @@
             const infoBanner = document.getElementById('info-banner');
             const sheetInfo = document.getElementById('sheet-info');
             
-            if (!spreadsheetId) {
-                showError("No spreadsheet ID provided. Please go back and enter a valid Google Sheets URL.");
+            if (!spreadsheetId && !csvInput) {
+                showError("No spreadsheet ID or CSV provided. Please go back and enter a valid Google Sheets URL.");
                 return;
             }
+
+            let isUsingCsv = (csvInput != null && csvInput.length > 0)
             
             // Display spreadsheet info
-            sheetInfo.textContent = `Spreadsheet ID: ${spreadsheetId.substring(0, 8)}...`;
-            
-            // Load and process the sheet data
-            loadSheetData(spreadsheetId, columnParam);
-            
-            // Function to load and process the data
-            async function loadSheetData(spreadsheetId, columnParam) {
-                try {
-                    // Fetch the sheet data - fetchSheetData will automatically get the first sheet
-                    const sheetDataResult = await fetchSheetData(spreadsheetId);
-                    const title = await getSpreadsheetTitle(spreadsheetId)
-                    document.querySelector("#title").innerText = title
-
-                    document.querySelector("#src-google-sheet").innerHTML = 
-                    `
-                    Source google sheet: 
-                    <a target="_blank" href="https://docs.google.com/spreadsheets/d/${spreadsheetId}">https://docs.google.com/spreadsheets/d/${spreadsheetId}</a>
-                    `
-                    
-                    // Get the name of the sheet for display purposes
-                    const sheetNames = await getSheetNames(spreadsheetId);
-                    const firstSheet = sheetNames[0];
-                    
-                    // Process the data
-                    const sheetData = sheetDataResult.values
-                    if (!sheetData || sheetData.length < 2) {
-                        throw new Error('Not enough data in the spreadsheet or the spreadsheet is empty.');
-                    }
-                    
-                    // Get column headers
-                    const headers = sheetData[0];
-                    globalHeaders = headers; // Store headers globally
-                    
-                    // Transform data into objects
-                    const transformedData = transformSheetData(sheetData);
-                    globalTransformedData = transformedData; // Store transformed data globally
-                    
-                    // Determine which column to display
-                    let targetColumn = null;
-                    
-                    if (columnParam) {
-                        // Try to find the column by letter or name
-                        targetColumn = findColumn(headers, columnParam);
-                        
-                        if (!targetColumn) {
-                            throw new Error(`Column "${columnParam}" not found in the spreadsheet.`);
-                        }
-                    } else {
-                        // Find first text column (skip date columns)
-                        targetColumn = headers.find(header => {
-                            // Look at first few rows to determine if it's likely a text column
-                            const values = transformedData.slice(0, 5).map(row => row[header]);
-                            const isLikelyText = values.some(val => val && val.length > 20);
-                            return isLikelyText;
-                        });
-                        
-                        if (!targetColumn) {
-                            // Fallback to first column
-                            targetColumn = headers[0];
-                        }
-                    }
-                    
-                    // Extract column data
-                    const responseData = extractColumn(transformedData, targetColumn);
-                    
-                    // Hide loading indicator
-                    document.getElementById('loading').style.display = 'none';
-                    
-                    // Update info banner
-                    infoBanner.innerHTML = `
-                        <strong>Sheet:</strong> ${firstSheet} &nbsp; | &nbsp;
-                        <strong>Column:</strong> ${targetColumn} &nbsp; | &nbsp;
-                        <strong>Total Responses:</strong> ${responseData.length} &nbsp; | &nbsp;
-                        <span id="num-clusters"></span>
-                    `;
-                    
-                    // Populate the column dropdown
-                    populateColumnDropdown(headers, targetColumn);
-                    
-                    
-                    document.querySelector("#run-button").style.display = 'inline-block'
-                    document.querySelector("#run-button").onclick = async () => {
-                        await displayResponses(responseData);
-                    }
-
-                    document.querySelector("#clear-button").onclick = async () => {
-                        const semanticEmbedding = new SemanticEmbedding()
-                        await semanticEmbedding.init()
-                        await semanticEmbedding.clearCache()
-                        alert("Done")
-                    }
-
-                    // const numClustersElement = document.querySelector("#num-clusters")
-                    // numClustersElement.onblur = async () => {
-                    //     await displayResponses(responseData)
-                    // }
-                } catch (error) {
-                    console.error('Error loading sheet data:', error);
-                    showError(error.message || 'Failed to load spreadsheet data');
-                }
+            if (isUsingCsv) {
+                sheetInfo.textContent = `<CSV>`;
+                parseCSV(csvInput, columnParam)
+                // TODO load csv columns, populate stuff, set up buttons
+            } else {
+                sheetInfo.textContent = `Spreadsheet ID: ${spreadsheetId.substring(0, 8)}...`;
+                await loadSheetData(spreadsheetId, columnParam);
             }
 
-            // Function to populate the column dropdown
-            function populateColumnDropdown(headers, selectedColumn) {
-                const columnSelect = document.getElementById('column-select');
-                const columnSelectorContainer = document.getElementById('column-selector-container');
+    
+        });
+
+
+        function showError(message) {
+                document.getElementById('loading').style.display = 'none';
+                const errorContainer = document.getElementById('error-container');
+                const errorMessage = document.getElementById('error-message');
                 
-                // Clear existing options
-                columnSelect.innerHTML = '';
-                
-                // Add options for each header
-                headers.forEach(header => {
-                    const option = document.createElement('option');
-                    option.value = header;
-                    option.textContent = header;
-                    option.selected = (header === selectedColumn);
-                    columnSelect.appendChild(option);
-                });
-                
-                // Show the column selector
-                columnSelectorContainer.style.display = 'flex';
+                errorMessage.textContent = message;
+                errorContainer.style.display = 'block';
             }
 
-            async function displayResponses(data) {
+        async function displayResponses(data) {
+            const infoBanner = document.getElementById('info-banner');
+
                 const responseListContainer = document.querySelector("#response-list-container")
                 
                 // Clear any existing content
                 responseListContainer.innerHTML = '';
 
                 const numClustersElement = document.querySelector("#num-clusters")
-                const inputTextArray = data.map(item => item.text)
+                const inputTextArray = data
                 console.log("LOADING SEMANTIC EMBEDDING")
 
                 const openaiKey = localStorage.getItem('openai-key')
@@ -542,8 +446,6 @@
                 
                 let clusterNum = 1
                 for (let cluster of clusters) {
-   
-
                     // Add cluster title 
                     let clusterCenterInput = ''
                     if (cluster.centerInput) {
@@ -608,15 +510,166 @@
                 
             }
 
-            function showError(message) {
-                document.getElementById('loading').style.display = 'none';
-                const errorContainer = document.getElementById('error-container');
-                const errorMessage = document.getElementById('error-message');
+        function populateColumnDropdown(headers, selectedColumn) {
+                const columnSelect = document.getElementById('column-select');
+                const columnSelectorContainer = document.getElementById('column-selector-container');
                 
-                errorMessage.textContent = message;
-                errorContainer.style.display = 'block';
+                // Clear existing options
+                columnSelect.innerHTML = '';
+                
+                // Add options for each header
+                headers.forEach(header => {
+                    const option = document.createElement('option');
+                    option.value = header;
+                    option.textContent = header;
+                    option.selected = (header === selectedColumn);
+                    columnSelect.appendChild(option);
+                });
+                
+                // Show the column selector
+                columnSelectorContainer.style.display = 'flex';
             }
-        });
+
+
+        async function parseCSV(csvInput, columnParam) {
+            const parsed = Papa.parse(csvInput, { 
+                header: true,
+                skipEmptyLines: true 
+            });
+            
+            const headers = parsed.meta.fields
+            const rows = parsed.data.slice(1)
+            let columnIndex = 1 
+            console.log({ columnParam })
+
+            if (columnParam) {
+                columnIndex = headers.indexOf(columnParam)
+            }
+            const targetColumn = headers[columnIndex]
+
+            const responseData = rows.map(item => item[targetColumn]).filter(item => item.length > 0);
+            
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+
+            // Update info banner
+            const infoBanner = document.getElementById('info-banner');
+
+            infoBanner.innerHTML = `
+                <strong>Column:</strong> ${targetColumn} &nbsp; | &nbsp;
+                <strong>Total Responses:</strong> ${responseData.length} &nbsp; | &nbsp;
+                <span id="num-clusters"></span>
+            `;
+            
+            // Populate the column dropdown
+            populateColumnDropdown(headers, targetColumn);
+            
+            
+            document.querySelector("#run-button").style.display = 'inline-block'
+            document.querySelector("#run-button").onclick = async () => {
+                await displayResponses(responseData);
+            }
+
+            document.querySelector("#clear-button").onclick = async () => {
+                const semanticEmbedding = new SemanticEmbedding()
+                await semanticEmbedding.init()
+                await semanticEmbedding.clearCache()
+                alert("Done")
+            }
+        }
+
+        async function loadSheetData(spreadsheetId, columnParam) {
+            const infoBanner = document.getElementById('info-banner');
+
+            try {
+                // Fetch the sheet data - fetchSheetData will automatically get the first sheet
+                const sheetDataResult = await fetchSheetData(spreadsheetId);
+                const title = await getSpreadsheetTitle(spreadsheetId)
+                document.querySelector("#title").innerText = title
+
+                document.querySelector("#src-google-sheet").innerHTML = 
+                `
+                Source google sheet: 
+                <a target="_blank" href="https://docs.google.com/spreadsheets/d/${spreadsheetId}">https://docs.google.com/spreadsheets/d/${spreadsheetId}</a>
+                `
+                
+                // Get the name of the sheet for display purposes
+                const sheetNames = await getSheetNames(spreadsheetId);
+                const firstSheet = sheetNames[0];
+                
+                // Process the data
+                const sheetData = sheetDataResult.values
+                if (!sheetData || sheetData.length < 2) {
+                    throw new Error('Not enough data in the spreadsheet or the spreadsheet is empty.');
+                }
+                
+                // Get column headers
+                const headers = sheetData[0];
+                
+                // Transform data into objects
+                const transformedData = transformSheetData(sheetData);
+                globalTransformedData = transformedData; // Store transformed data globally
+                
+                // Determine which column to display
+                let targetColumn = null;
+                
+                if (columnParam) {
+                    // Try to find the column by letter or name
+                    targetColumn = findColumn(headers, columnParam);
+                    
+                    if (!targetColumn) {
+                        throw new Error(`Column "${columnParam}" not found in the spreadsheet.`);
+                    }
+                } else {
+                    // Find first text column (skip date columns)
+                    targetColumn = headers.find(header => {
+                        // Look at first few rows to determine if it's likely a text column
+                        const values = transformedData.slice(0, 5).map(row => row[header]);
+                        const isLikelyText = values.some(val => val && val.length > 20);
+                        return isLikelyText;
+                    });
+                    
+                    if (!targetColumn) {
+                        // Fallback to first column
+                        targetColumn = headers[0];
+                    }
+                }
+                
+                // Extract column data
+                const responseData = extractColumn(transformedData, targetColumn);
+                
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+                
+                // Update info banner
+                infoBanner.innerHTML = `
+                    <strong>Sheet:</strong> ${firstSheet} &nbsp; | &nbsp;
+                    <strong>Column:</strong> ${targetColumn} &nbsp; | &nbsp;
+                    <strong>Total Responses:</strong> ${responseData.length} &nbsp; | &nbsp;
+                    <span id="num-clusters"></span>
+                `;
+                
+                // Populate the column dropdown
+                populateColumnDropdown(headers, targetColumn);
+                
+                
+                document.querySelector("#run-button").style.display = 'inline-block'
+                document.querySelector("#run-button").onclick = async () => {
+                    await displayResponses(responseData.map(item => item.text));
+                }
+
+                document.querySelector("#clear-button").onclick = async () => {
+                    const semanticEmbedding = new SemanticEmbedding()
+                    await semanticEmbedding.init()
+                    await semanticEmbedding.clearCache()
+                    alert("Done")
+                }
+            } catch (error) {
+                console.error('Error loading sheet data:', error);
+                showError(error.message || 'Failed to load spreadsheet data');
+            }
+        }
+
     </script>
 </body>
 </html>

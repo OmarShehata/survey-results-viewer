@@ -35,6 +35,7 @@ export class SemanticEmbedding {
     }
 
     async embed(textArray) {
+        console.log({ textArray })
         if (this.openaiKey) {
             console.log("Embedding using OpenAI")
             return await this.embedOpenAI(textArray)
