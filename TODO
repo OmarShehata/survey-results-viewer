@@ -1,9 +1,12 @@
 TODO
 
-- Support raw CSV as input
-- 
+- Color by my trust network 
+- Make it so if you click on the map and there is a "URL" parameter it takes you there
+    - update script to extract tweet id/URL
+- Export the clustering...?
+    - generate geojson + HTML page
 
 ideas
 
-- Export the clustering...?
+
 - Add embedding progress bar on the page
