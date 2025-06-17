@@ -202,8 +202,12 @@
         .map-container {
             height: 400px;
         }
+
+        .gray-text {
+            color: gray;
+        }
     </style>
-  <script type="module" crossorigin src="./assets/semantic.b23b6c5f.js"></script>
+  <script type="module" crossorigin src="./assets/semantic.097df688.js"></script>
   <link rel="modulepreload" href="./assets/modulepreload-polyfill.b7f2da20.js">
   <link rel="modulepreload" href="./assets/sheets-api.2d2ad60f.js">
   <link rel="stylesheet" href="./assets/semantic.aec108a8.css">
@@ -241,6 +245,11 @@
         <div class="column-selector">
             <label for="openai-key">OpenAI Key:</label>
             <input id="openai-key" type="text" placeholder="(use local model)"/>
+        </div>
+        
+        <div class="column-selector">
+            <label for="preprocess-prompt">Preprocess prompt:</label>
+            <textarea id="preprocess-prompt" type="text" placeholder="(none)"></textarea>
         </div>
 
         <div class="column-selector">
