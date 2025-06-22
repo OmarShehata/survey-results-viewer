@@ -207,7 +207,7 @@
             color: gray;
         }
     </style>
-  <script type="module" crossorigin src="./assets/semantic.097df688.js"></script>
+  <script type="module" crossorigin src="./assets/semantic.a7300aca.js"></script>
   <link rel="modulepreload" href="./assets/modulepreload-polyfill.b7f2da20.js">
   <link rel="modulepreload" href="./assets/sheets-api.2d2ad60f.js">
   <link rel="stylesheet" href="./assets/semantic.aec108a8.css">
@@ -252,9 +252,17 @@
             <textarea id="preprocess-prompt" type="text" placeholder="(none)"></textarea>
         </div>
 
-        <div class="column-selector">
+        <div class="column-selector" style="display: none;">
             <input id="truncate-responses" type="checkbox"/>
             <label for="truncate-responses">Truncate responses</label>
+        </div>
+
+        <div class="column-selector">
+            <label for="clustering-method">Clustering method:</label>
+            <select id="clustering-method">
+                <option value="umap">UMAP</option>
+                <option value="pca">PCA</option>
+            </select>
         </div>
 
         <button id="run-button" style="margin-bottom:25px; display: none">
