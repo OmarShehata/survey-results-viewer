@@ -248,9 +248,17 @@
             <textarea id="preprocess-prompt" type="text" placeholder="(none)"></textarea>
         </div>
 
-        <div class="column-selector">
+        <div class="column-selector" style="display: none;">
             <input id="truncate-responses" type="checkbox"/>
             <label for="truncate-responses">Truncate responses</label>
+        </div>
+
+        <div class="column-selector">
+            <label for="clustering-method">Clustering method:</label>
+            <select id="clustering-method">
+                <option value="umap">UMAP</option>
+                <option value="pca">PCA</option>
+            </select>
         </div>
 
         <button id="run-button" style="margin-bottom:25px; display: none">
@@ -323,6 +331,14 @@
         };
         
         document.addEventListener('DOMContentLoaded', async function() {
+            const clusteringMethodElement = document.querySelector("#clustering-method")
+            clusteringMethodElement.onchange = () => {
+                localStorage.setItem('clustering-method', clusteringMethodElement.value)
+            }
+            if (localStorage.getItem('clustering-method')) {
+                clusteringMethodElement.value = localStorage.getItem('clustering-method')
+            }
+
             const promptElement = document.querySelector("#preprocess-prompt")
             promptElement.onblur = () => {
                 localStorage.setItem('prompt', promptElement.value)
@@ -495,6 +511,8 @@
                     centerInputs = localStorage.getItem('cluster-centers').split('\n').filter(item => item.length)
                     centers = await semanticEmbedding.embed(centerInputs)
                 }
+                const clusteringMethodElement = document.querySelector("#clustering-method")
+                const method = clusteringMethodElement.value
 
                 console.log({items, numClusters, centers})
                 let clusters = cluster(items, numClusters, centers, centerInputs)
@@ -523,7 +541,7 @@
                         mapContainer.id = `map-container-${clusterNum}`
                         responseListContainer.appendChild(mapContainer)
                         
-                        clusterMap = new ClusterMap({ containerId: mapContainer.id })
+                        clusterMap = new ClusterMap({ containerId: mapContainer.id, method })
                         clusterMap.visualizeCluster(cluster)
                     }
                      

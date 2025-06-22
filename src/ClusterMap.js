@@ -1,9 +1,10 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { PCA } from 'ml-pca';
+import { UMAP } from 'umap-js';
 
 export class ClusterMap {
-    constructor({ containerId }) {
+    constructor({ containerId, method }) {
         const map = new maplibregl.Map({
             container: containerId, // container id
             renderWorldCopies: false,
@@ -18,6 +19,7 @@ export class ClusterMap {
             zoom: 1 // starting zoom
         });
         this.map = map 
+        this.method = method
     }
 
     changeSelectedPoint(textToSelect) {
@@ -33,15 +35,21 @@ export class ClusterMap {
         // const cluster = clusters[0]
 
         const embeddings = cluster.items.map(item => item.embedding);
+        let projectedData = null
 
-        const pca = new PCA(embeddings, {
-            scale: true,
-            center: true
-        });
-        console.log(embeddings)
-        const { data } = pca.predict(embeddings, { nComponents: 2 });
-        // x,y = console.log(data[0][0], data[0][1])
-        console.log(Array.from(data).map(row => Array.from(row)))
+        if (this.method == 'umap') {
+            const umap = new UMAP();
+            projectedData = umap.fit(embeddings);
+        } else {
+            const pca = new PCA(embeddings, {
+                scale: true,
+                center: true
+            });
+            const { data } = pca.predict(embeddings, { nComponents: 2 });
+
+            projectedData = data
+        }
+        
 
         const rect = {
             minLat: -50,    
@@ -49,7 +57,7 @@ export class ClusterMap {
             minLng: -50,   
             maxLng: 50    
         }
-        const latLngPoints = convertPCAToLatLng(data, rect);
+        const latLngPoints = convertPCAToLatLng(projectedData, rect);
         
         const geojson = {
             "type": "FeatureCollection",
