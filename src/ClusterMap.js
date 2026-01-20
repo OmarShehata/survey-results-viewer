@@ -131,15 +131,34 @@ export class ClusterMap {
                 }
             });
 
+            const that = this
             function clickHandler(e) {
                 const properties = e.features[0].properties;
                 const url = properties.url
+
+                if (url) {
+                    window.open(url, '_blank');
+                }
                 
-                window.open(url, '_blank');
+                const text = properties.text
+                console.log(text)
+                that.changeSelectedPoint(text)
             }
         
             map.on('click', 'points-layer', clickHandler);
             map.on('click', 'point-labels', clickHandler);
+
+            map.on('click', (e) => {
+                // Query features from specific layers
+                const features = map.queryRenderedFeatures(e.point, {
+                    layers: ['points-layer', 'point-labels']
+                });
+                
+                // If no features from our layers, deselect
+                if (features.length === 0) {
+                    this.changeSelectedPoint(null);
+                }
+            });
         })
     }
 }
