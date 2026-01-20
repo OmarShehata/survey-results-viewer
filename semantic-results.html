@@ -413,7 +413,7 @@
                 errorContainer.style.display = 'block';
             }
 
-        async function displayResponses(data) {
+        async function displayResponses(data, urls = []) {
             const infoBanner = document.getElementById('info-banner');
 
                 const responseListContainer = document.querySelector("#response-list-container")
@@ -483,18 +483,21 @@
                 for (let i = 0; i < inputTextArray.length; i++) {
                     const text = inputTextArray[i]
                     const vector = vectors[i]
+                    const url = urls[i]
 
                     if (processedText) {
                         items.push({
                             content: processedText[i], 
                             embedding: vector, 
-                            originalText: text
+                            originalText: text,
+                            url
                         })
                     } else {
                         items.push({
                             content: text, 
                             embedding: vector, 
-                            originalText: null
+                            originalText: null,
+                            url
                         })
                     }
 
@@ -614,12 +617,14 @@
             const parsed = Papa.parse(csvInput, { 
                 header: true,
                 skipEmptyLines: true 
-            });
+            });   
             
             const headers = parsed.meta.fields
+            const hasUrlColumn = headers.includes('url')
+
             const rows = parsed.data.slice(1)
             let columnIndex = 1 
-            console.log({ columnParam })
+            console.log({ rows })
 
             if (columnParam) {
                 columnIndex = headers.indexOf(columnParam)
@@ -628,6 +633,11 @@
 
             const responseData = rows.map(item => item[targetColumn]).filter(item => item.length > 0);
             
+            let urls = []
+            if (hasUrlColumn) {
+                urls = rows.map(item => item['url']).filter(item => item.length > 0);
+            }
+
             // Hide loading indicator
             document.getElementById('loading').style.display = 'none';
 
@@ -646,7 +656,7 @@
             
             document.querySelector("#run-button").style.display = 'inline-block'
             document.querySelector("#run-button").onclick = async () => {
-                await displayResponses(responseData);
+                await displayResponses(responseData, urls);
             }
 
             document.querySelector("#clear-button").onclick = async () => {

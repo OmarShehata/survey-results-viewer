@@ -77,11 +77,12 @@ export class ClusterMap {
             const point = latLngPoints[i]
             const item = cluster.items[i]
             const text = item.content 
+            const url = item.url
 
             geojson.features.push({
                 "type": "Feature",
                 "properties": {
-                    text
+                    text, url
                 },
                 "geometry": {
                   "coordinates": [ point.lng, point.lat ],
@@ -129,6 +130,16 @@ export class ClusterMap {
                     // 'text-halo-width': 2
                 }
             });
+
+            function clickHandler(e) {
+                const properties = e.features[0].properties;
+                const url = properties.url
+                
+                window.open(url, '_blank');
+            }
+        
+            map.on('click', 'points-layer', clickHandler);
+            map.on('click', 'point-labels', clickHandler);
         })
     }
 }
